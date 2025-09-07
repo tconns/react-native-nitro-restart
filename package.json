@@ -1,6 +1,6 @@
 {
   "name": "react-native-nitro-restart",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "App restart and process management for React Native built with Nitro Modules. Provides native app restart, safe exit, and process ID functionality with cross-platform support for iOS and Android.",
   "main": "lib/index",
   "module": "lib/index",
@@ -86,11 +86,11 @@
     "@types/jest": "^29.5.12",
     "@types/react": "19.1.0",
     "conventional-changelog-conventionalcommits": "^9.1.0",
-    "nitro-codegen": "^0.29.2",
+    "nitro-codegen": "^0.29.3",
     "react": "19.1.0",
     "react-native": "0.80.2",
     "react-native-builder-bob": "^0.37.0",
-    "react-native-nitro-modules": "^0.29.2",
+    "react-native-nitro-modules": "^0.29.3",
     "semantic-release": "^24.2.6",
     "typescript": "5.0.4"
   },
