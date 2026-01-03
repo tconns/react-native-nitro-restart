@@ -24,6 +24,13 @@ Pod::Spec.new do |s|
   load 'nitrogen/generated/ios/NitroRestart+autolinking.rb'
   add_nitrogen_files(s)
 
+  # Fix for RN 0.77-0.79 with static frameworks (from https://github.com/mrousavy/nitro/pull/825)
+  s.pod_target_xcconfig = {
+    "HEADER_SEARCH_PATHS" => "${PODS_ROOT}/RCT-Folly",
+    "GCC_PREPROCESSOR_DEFINITIONS" => "$(inherited) FOLLY_NO_CONFIG FOLLY_CFG_NO_COROUTINES",
+    "OTHER_CPLUSPLUSFLAGS" => "$(inherited) -DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1"
+  }
+
   s.dependency 'React-jsi'
   s.dependency 'React-callinvoker'
   install_modules_dependencies(s)
