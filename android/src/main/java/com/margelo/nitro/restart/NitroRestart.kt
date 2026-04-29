@@ -14,6 +14,7 @@ import android.os.Looper
 @DoNotStrip
 class NitroRestart : HybridNitroRestartSpec() {
   private val applicationContext: Context? = NitroModules.applicationContext
+  private val mainHandler = Handler(Looper.getMainLooper())
   
   private fun getCurrentActivity(): Activity? {
     return try {
@@ -30,27 +31,35 @@ class NitroRestart : HybridNitroRestartSpec() {
   }
 
   override fun restartApp(moduleName: String) {
-    val activity = getCurrentActivity()
-    if (activity == null) {
-      Log.e("NitroRestart", "Cannot restart app: Activity is null")
+    val appContext = applicationContext
+    if (appContext == null) {
+      Log.e("NitroRestart", "Cannot restart app: applicationContext is null")
       return
     }
 
     try {
-      Handler(Looper.getMainLooper()).post {
-        val packageManager = activity.packageManager
-        val intent = packageManager.getLaunchIntentForPackage(activity.packageName)
+      mainHandler.post {
+        val packageManager = appContext.packageManager
+        val intent = packageManager.getLaunchIntentForPackage(appContext.packageName)
         if (intent != null) {
-          intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-          activity.startActivity(intent)
-          // ❌ KHÔNG gọi activity.finish() nữa
-          Runtime.getRuntime().exit(0)
-          // hoặc Process.killProcess(Process.myPid()) nếu muốn đảm bảo process cũ bị kill
+          intent.addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+              Intent.FLAG_ACTIVITY_CLEAR_TASK or
+              Intent.FLAG_ACTIVITY_CLEAR_TOP
+          )
+          appContext.startActivity(intent)
+          getCurrentActivity()?.finishAffinity()
+        } else {
+          Log.e("NitroRestart", "Cannot restart app: launch intent is null")
         }
       }
     } catch (e: Exception) {
       Log.e("NitroRestart", "Error restarting app: ${e.message}")
     }
+  }
+
+  override fun restartCurrentApp() {
+    restartApp("")
   }
 
   override fun exitApp() {
@@ -72,5 +81,9 @@ class NitroRestart : HybridNitroRestartSpec() {
     } catch (e: Exception) {
       Log.e("NitroRestart", "Error exiting app: ${e.message}")
     }
+  }
+
+  override fun canExitApp(): Boolean {
+    return true
   }
 }

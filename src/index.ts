@@ -8,8 +8,16 @@ export const restartApp = (moduleName: string) => {
   NitroRestartModule.restartApp(moduleName)
 }
 
+export const restartCurrentApp = () => {
+  NitroRestartModule.restartCurrentApp()
+}
+
 export const exitApp = () => {
   NitroRestartModule.exitApp()
+}
+
+export const canExitApp = (): boolean => {
+  return NitroRestartModule.canExitApp()
 }
 
 export const getPid = (): number => {

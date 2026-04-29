@@ -10,8 +10,14 @@
   },
   "autolinking": {
     "NitroRestart": {
-      "swift": "NitroRestart",
-      "kotlin": "NitroRestart"
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "NitroRestart"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "NitroRestart"
+      }
     }
   },
   "ignorePaths": ["**/node_modules"],

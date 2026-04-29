@@ -11,30 +11,29 @@ import React
 class NitroRestart: HybridNitroRestartSpec {
   func restartApp(moduleName: String) {
     DispatchQueue.main.async {
-      guard let appDelegate = UIApplication.shared.delegate else {
-        print("NitroRestart Error: Unable to access app delegate")
+      NotificationCenter.default.post(name: NSNotification.Name("RCTReloadNotification"), object: nil)
+
+      // Fallback for app delegates that expose ReactNativeFactory via reflection
+      guard
+        let appDelegate = UIApplication.shared.delegate as? NSObject,
+        let window = appDelegate.value(forKey: "window") as? UIWindow,
+        let factory = appDelegate.value(forKey: "reactNativeFactory") as? NSObject
+      else {
         return
       }
-      
-      // Try to get window and factory using reflection
-      guard let window = (appDelegate as? NSObject)?.value(forKey: "window") as? UIWindow,
-            let factory = (appDelegate as? NSObject)?.value(forKey: "reactNativeFactory") else {
-        print("NitroRestart Error: Unable to access window or React Native factory")
-        return
-      }
-      
-      // Use reflection to call startReactNative method
-      let factoryObject = factory as AnyObject
+
       let selector = Selector(("startReactNative:in:launchOptions:"))
-      if factoryObject.responds(to: selector) {
-        let method = factoryObject.method(for: selector)
+      if factory.responds(to: selector), let method = factory.method(for: selector) {
         typealias StartReactNativeMethod = @convention(c) (AnyObject, Selector, String, UIWindow, [UIApplication.LaunchOptionsKey: Any]?) -> Void
         let startReactNative = unsafeBitCast(method, to: StartReactNativeMethod.self)
-        startReactNative(factoryObject, selector, moduleName, window, nil)
-      } else {
-        print("NitroRestart Error: startReactNative method not found")
+        let resolvedModuleName = moduleName.isEmpty ? (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "App") : moduleName
+        startReactNative(factory, selector, resolvedModuleName, window, nil)
       }
     }
+  }
+
+  func restartCurrentApp() {
+    restartApp(moduleName: "")
   }
 
   func exitApp() {
@@ -53,6 +52,10 @@ class NitroRestart: HybridNitroRestartSpec {
         UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
       }
     }
+  }
+
+  func canExitApp() -> Bool {
+    return true
   }
 
   func getPid() -> Double {

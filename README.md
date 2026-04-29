@@ -1,252 +1,209 @@
 # react-native-nitro-restart
 
-App restart and process management for React Native built with Nitro Modules.
+Native restart/exit/process utilities for React Native, built with Nitro Modules.
 
-## Overview
+This package provides a small, typed API to:
 
-This module provides native-level app restart and process management functionality for both Android and iOS. It exposes simple JS/TS APIs to restart the app, exit the app, and get the current process ID.
+- restart app runtime
+- request app exit/backgrounding
+- read current process id (PID)
 
 ## Features
 
-- � **App Restart** - Restart the entire React Native app
-- � **App Exit** - Safely exit the application 
-- 🆔 **Process ID** - Get the current process identifier
-- 🚀 Built with Nitro Modules for native performance and autolinking support
-- 📱 Cross-platform support (iOS & Android)
-- ⚡ Zero-config setup with autolinking
+- Nitro-based iOS and Android implementation
+- Simple JS API with TypeScript types
+- Autolinking support
+- Extra convenience APIs for safer usage (`restartCurrentApp`, `canExitApp`)
 
 ## Requirements
 
-- React Native >= 0.76
-- Node >= 18
-- `react-native-nitro-modules` must be installed (Nitro runtime)
+- React Native `>= 0.76`
+- Node.js `>= 18`
+- `react-native-nitro-modules` `>= 0.35.x`
 
 ## Installation
 
 ```bash
 npm install react-native-nitro-restart react-native-nitro-modules
-# or
+```
+
+or
+
+```bash
 yarn add react-native-nitro-restart react-native-nitro-modules
 ```
 
-## Configuration
+## Platform setup
 
-### Android Setup
+No special permission is required by this library.
 
-No additional configuration required. The module will automatically handle app restart through Android's activity management.
+- **Android**: no extra manifest permission needed for restart/exit API.
+- **iOS**: no extra entitlement required for restart/exit API.
 
-### iOS Setup
+Then run platform dependency sync as usual:
 
-No additional configuration required. The module uses React Native's built-in restart capabilities.
-
-### Troubleshooting
-
-- **Android**: If restart doesn't work, ensure your app has proper activity lifecycle management
-- **iOS**: Make sure your app delegate is properly configured for React Native
-- **Both platforms**: Test on real devices for best results
-
-## Quick Usage
-
-```typescript
-import { NitroRestartModule } from 'react-native-nitro-restart'
-
-// Restart the app with default module name
-NitroRestartModule.restartApp('YourAppName')
-
-// Get current process ID
-const processId = NitroRestartModule.getPid()
-console.log('Current PID:', processId)
-
-// Exit the app (use with caution)
-NitroRestartModule.exitApp()
+```bash
+cd ios && pod install
 ```
 
-## API Reference
+## Quick usage
 
-### App Management
+```ts
+import {
+  restartApp,
+  restartCurrentApp,
+  exitApp,
+  canExitApp,
+  getPid,
+} from 'react-native-nitro-restart'
 
-#### `restartApp(moduleName: string): void`
+restartApp('MyApp')
+restartCurrentApp()
 
-Restarts the React Native application with the specified module name.
+if (canExitApp()) {
+  exitApp()
+}
 
-**Parameters:**
-
-- `moduleName` (string): The name of the main React Native module to restart with
-
-**Example:**
-
-```typescript
-import { NitroRestartModule } from 'react-native-nitro-restart'
-
-// Restart with your app's main module
-NitroRestartModule.restartApp('MyApp')
+console.log('PID:', getPid())
 ```
 
-#### `exitApp(): void`
+## API reference
 
-Safely exits the application. On iOS, this moves the app to background instead of force terminating. On Android, this finishes the current activity and moves the app to background.
+### `restartApp(moduleName: string): void`
 
-**Note:** Use this method with caution as it may violate app store guidelines if used inappropriately.
+Requests app restart using a specific module name.
 
-**Example:**
+### `restartCurrentApp(): void`
 
-```typescript
-import { NitroRestartModule } from 'react-native-nitro-restart'
+Convenience method to restart current app without passing module name.
 
-// Exit the app
-NitroRestartModule.exitApp()
-```
+### `exitApp(): void`
 
-#### `getPid(): number`
+Requests app exit/background transition.
 
-Returns the current process identifier (PID) of the application.
+Use with caution and with user intent.
 
-**Returns:**
+### `canExitApp(): boolean`
 
-- `number`: The current process ID
+Returns whether the platform implementation allows exit flow.
 
-**Example:**
+### `getPid(): number`
 
-```typescript
-import { NitroRestartModule } from 'react-native-nitro-restart'
+Returns current process id.
 
-// Get current process ID
-const processId = NitroRestartModule.getPid()
-console.log('Current PID:', processId)
-```
+## Example (React screen)
 
-## Complete Example
+```tsx
+import React from 'react'
+import { Alert, Button, Text, View } from 'react-native'
+import {
+  restartApp,
+  restartCurrentApp,
+  exitApp,
+  canExitApp,
+  getPid,
+} from 'react-native-nitro-restart'
 
-```typescript
-import React, { useState } from 'react'
-import { View, Button, Text, Alert } from 'react-native'
-import { NitroRestartModule } from 'react-native-nitro-restart'
+export function RestartDemoScreen() {
+  const pid = getPid()
 
-const App = () => {
-  const [processId, setProcessId] = useState<number | null>(null)
-
-  const handleGetPid = () => {
-    const pid = NitroRestartModule.getPid()
-    setProcessId(pid)
+  const onRestart = () => {
+    Alert.alert('Restart', 'Restart app now?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Restart', onPress: () => restartCurrentApp() },
+    ])
   }
 
-  const handleRestart = () => {
-    Alert.alert(
-      'Restart App',
-      'Are you sure you want to restart the application?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Restart',
-          onPress: () => NitroRestartModule.restartApp('YourAppName')
-        }
-      ]
-    )
+  const onRestartWithModule = () => {
+    Alert.alert('Restart', 'Restart with explicit module name?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Restart', onPress: () => restartApp('MyApp') },
+    ])
   }
 
-  const handleExit = () => {
-    Alert.alert(
-      'Exit App',
-      'Are you sure you want to exit the application?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Exit',
-          style: 'destructive',
-          onPress: () => NitroRestartModule.exitApp()
-        }
-      ]
-    )
+  const onExit = () => {
+    if (!canExitApp()) return
+    Alert.alert('Exit', 'Exit app?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Exit', style: 'destructive', onPress: () => exitApp() },
+    ])
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: 20 }}>
-      <Button title="Get Process ID" onPress={handleGetPid} />
-      {processId && (
-        <Text style={{ textAlign: 'center', margin: 10 }}>
-          Current PID: {processId}
-        </Text>
-      )}
-      
-      <Button title="Restart App" onPress={handleRestart} />
-      <Button title="Exit App" onPress={handleExit} color="red" />
+    <View style={{ flex: 1, justifyContent: 'center', padding: 20, gap: 12 }}>
+      <Text>Current PID: {pid}</Text>
+      <Button title="Restart current app" onPress={onRestart} />
+      <Button title="Restart with module name" onPress={onRestartWithModule} />
+      <Button title="Exit app" onPress={onExit} />
     </View>
   )
 }
-
-export default App
 ```
 
-## Platform Support
+## Platform behavior notes
 
-| Feature      | iOS | Android | Notes |
-| ------------ | --- | ------- | ----- |
-| restartApp() | ✅  | ✅      | Creates new React context |
-| exitApp()    | ✅  | ✅      | Moves to background (safe) |
-| getPid()     | ✅  | ✅      | Returns process identifier |
+- **iOS**
+  - Uses React reload notification as primary path.
+  - Falls back to React factory reflection if available.
+  - `exitApp()` uses app suspension style behavior; Apple may reject abusive usage.
 
-## Best Practices
+- **Android**
+  - Restart re-launches app launch intent with task flags.
+  - `exitApp()` moves task to background and calls `finishAffinity`.
+  - Avoid force-kill patterns for Play policy compliance.
 
-1. **User confirmation**: Always ask for user confirmation before restarting or exiting the app
-2. **Save state**: Ensure important app state is saved before restart/exit operations
-3. **Error handling**: Wrap operations in try-catch blocks for production apps
-4. **App store compliance**: Be cautious with `exitApp()` - some app stores discourage apps from terminating themselves
-5. **Testing**: Test restart functionality thoroughly on both platforms and different devices
+## Test checklist
 
-## Important Notes
+- [ ] Restart from foreground (iOS/Android)
+- [ ] Restart from background-resumed state
+- [ ] Exit action with explicit user confirmation
+- [ ] PID is readable and stable during normal session
+- [ ] No crash loop after repeated restart (5-10 times)
+- [ ] Works on at least one real iOS device and one real Android device
 
-⚠️ **App Store Guidelines**:
+## Nitro development
 
-- **iOS**: Apple's guidelines discourage apps from programmatically terminating themselves
-- **Android**: Google Play has similar recommendations
-- Use `exitApp()` sparingly and only when absolutely necessary
-
-📱 **Platform Differences**:
-
-- **iOS**: Restart creates a new React Native context within the same process
-- **Android**: Restart may create a new activity or recreate the React context
-- Both platforms handle `exitApp()` by moving the app to background instead of force termination
-
-## TypeScript Interface
-
-```typescript
-export interface NitroRestart
-  extends HybridObject<{ ios: 'swift'; android: 'kotlin' }> {
-  restartApp(moduleName: string): void
-  exitApp(): void
-  getPid(): number
-}
-```
-
-## Migration Notes
-
-When updating spec files in `src/specs/*.nitro.ts`, regenerate Nitro artifacts:
+When updating `src/specs/*.nitro.ts`, regenerate artifacts:
 
 ```bash
-npx nitro-codegen
+npx tsc && npx nitrogen --logLevel="debug"
 ```
 
-## Contributing
+Useful scripts:
 
-See `CONTRIBUTING.md` for contribution workflow. Run `npx nitro-codegen` after editing spec files.
+- `npm run typecheck`
+- `npm run lint`
+- `npm run specs`
 
-## Project Structure
+## Implementation plan (to-do)
 
-- `android/` — Native Android implementation (Kotlin)
-- `ios/` — Native iOS implementation (Swift)
-- `src/` — TypeScript API exports
-- `nitrogen/` — Generated Nitro artifacts
+Status legend:
 
-## Acknowledgements
+- `[x]` done
+- `[ ]` planned
+- `[~]` in progress
 
-Special thanks to the following open-source projects which inspired and supported the development of this library:
+### Core Nitro baseline
 
-- [mrousavy/nitro](https://github.com/mrousavy/nitro) – for the Nitro Modules architecture and tooling
+- [x] Migrate toolchain to `nitrogen` + `react-native-nitro-modules@^0.35.6`
+- [x] Update `nitro.json` autolinking schema to current per-platform format
+- [x] Regenerate `nitrogen/generated/*` artifacts and autolinking files
+- [x] Keep backward compatibility for `restartApp(moduleName)`
+- [x] Add extended APIs: `restartCurrentApp()`, `canExitApp()`
+
+### Native hardening
+
+- [x] Android restart path switched to launch intent from app context
+- [x] Android flow avoids force-kill as default behavior
+- [x] iOS reload notification path added as primary restart path
+- [~] Broader host-app compatibility validation across RN templates
+
+### Next planned improvements
+
+- [ ] Add optional restart policy/options object API
+- [ ] Add platform capability diagnostics (reason codes, not only boolean)
+- [ ] Add E2E smoke test app and CI matrix for restart behavior
 
 ## License
 
 MIT © [Thành Công](https://github.com/tconns)
-          
-<a href="https://www.buymeacoffee.com/tconns94" target="_blank">
-  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="200"/>
-</a>
